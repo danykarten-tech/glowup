@@ -1,5 +1,5 @@
 import { Link, useLocation, Outlet } from "react-router-dom";
-import { LayoutDashboard, Upload, History, Settings, User, ShoppingBag, Crown, MessageSquare, Shield } from "lucide-react";
+import { LayoutDashboard, Upload, History, Settings, User, ShoppingBag, Crown, MessageSquare, Shield, Flame } from "lucide-react";
 import FaceNovaLogo from "@/components/FaceNovaLogo";
 import InstallPrompt from "@/components/InstallPrompt";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
