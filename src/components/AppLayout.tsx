@@ -1,0 +1,120 @@
+import { Link, useLocation, Outlet } from "react-router-dom";
+import { LayoutDashboard, Upload, History, Settings, User, ShoppingBag, Crown, MessageSquare, Shield } from "lucide-react";
+import FaceNovaLogo from "@/components/FaceNovaLogo";
+import InstallPrompt from "@/components/InstallPrompt";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
+
+const sidebarLinks = [
+  { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+  { label: "Upload", href: "/upload", icon: Upload },
+  { label: "History", href: "/history", icon: History },
+  { label: "Products", href: "/products", icon: ShoppingBag },
+  { label: "Plans & Pricing", href: "/plans", icon: Crown },
+  { label: "Support", href: "/support", icon: MessageSquare },
+  { label: "Settings", href: "/settings", icon: Settings },
+  { label: "Profile", href: "/profile", icon: User },
+];
+
+const mobileTabLinks = [
+  { label: "Home", href: "/dashboard", icon: LayoutDashboard },
+  { label: "Upload", href: "/upload", icon: Upload },
+  { label: "History", href: "/history", icon: History },
+  { label: "Products", href: "/products", icon: ShoppingBag },
+  { label: "Profile", href: "/profile", icon: User },
+];
+
+const AppLayout = () => {
+  const location = useLocation();
+  const isAdmin = useIsAdmin();
+
+  return (
+    <div className="min-h-screen flex flex-col md:flex-row bg-background">
+      {/* Desktop Sidebar */}
+      <aside className="hidden md:flex flex-col w-64 border-r border-border bg-card/50 p-4">
+        <Link to="/dashboard" className="flex items-center gap-2 font-display font-bold text-lg mb-8 px-2">
+          <FaceNovaLogo size={32} />
+          <span>FaceNova</span>
+        </Link>
+        <nav className="flex flex-col gap-1 flex-1">
+          {sidebarLinks.map((link) => {
+            const Icon = link.icon;
+            const isActive = location.pathname === link.href;
+            return (
+              <Link
+                key={link.href}
+                to={link.href}
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                  isActive
+                    ? "gradient-bg-subtle text-primary"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                }`}
+              >
+                <Icon className="w-4 h-4" />
+                {link.label}
+              </Link>
+            );
+          })}
+          {isAdmin && (
+            <>
+              <div className="border-t border-border my-2" />
+              <Link
+                to="/admin/dashboard"
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                  location.pathname === "/admin/dashboard"
+                    ? "gradient-bg-subtle text-primary"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                }`}
+              >
+                <Shield className="w-4 h-4" />
+                Admin Panel
+              </Link>
+              <Link
+                to="/admin/products"
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                  location.pathname === "/admin/products"
+                    ? "gradient-bg-subtle text-primary"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                }`}
+              >
+                <ShoppingBag className="w-4 h-4" />
+                Manage Products
+              </Link>
+            </>
+          )}
+        </nav>
+      </aside>
+
+      {/* Main Content */}
+      <main className="flex-1 pb-20 md:pb-0">
+        <Outlet />
+      </main>
+
+      {/* Mobile Bottom Tab — 5 icons only */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-card/95 backdrop-blur-xl border-t border-border z-50">
+        <div className="flex items-center justify-around py-2">
+          {mobileTabLinks.map((link) => {
+            const Icon = link.icon;
+            const isActive = location.pathname === link.href;
+            return (
+              <Link
+                key={link.href}
+                to={link.href}
+                className={`flex flex-col items-center gap-0.5 px-3 py-1 text-xs font-medium transition-colors ${
+                  isActive ? "text-primary" : "text-muted-foreground"
+                }`}
+              >
+                <Icon className="w-5 h-5" />
+                {link.label}
+              </Link>
+            );
+          })}
+        </div>
+      </nav>
+
+      {/* Install App Banner */}
+      <InstallPrompt />
+    </div>
+  );
+};
+
+export default AppLayout;
