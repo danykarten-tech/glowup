@@ -8,6 +8,7 @@ import { useLatestAnalysis, useAnalysisById } from "@/hooks/useLatestAnalysis";
 import { usePlan } from "@/hooks/usePlan";
 import UpgradePrompt from "@/components/UpgradePrompt";
 import BeforeAfterComparison from "@/components/BeforeAfterComparison";
+import FaceAnalysisOverlay from "@/components/FaceAnalysisOverlay";
 import EngagementCards from "@/components/EngagementCards";
 import GlowJourneySection from "@/components/GlowJourneySection";
 import { motion } from "framer-motion";
@@ -367,6 +368,15 @@ const Results = () => {
           </motion.div>
         )}
       </motion.div>
+
+      {/* === FACE ANALYSIS OVERLAY === */}
+      <FaceAnalysisOverlay
+        photoUrl={analysis.photo_url}
+        overallScore={analysis.overall_score}
+        skinScore={analysis.skin_score}
+        acneScore={acneScore}
+        darkSpotScore={darkSpotScore}
+      />
 
       {/* === PERSONALIZED INSIGHTS === */}
       <motion.div
