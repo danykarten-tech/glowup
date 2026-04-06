@@ -11,13 +11,13 @@ import BeforeAfterComparison from "@/components/BeforeAfterComparison";
 import FaceLandmarkOverlay from "@/components/FaceLandmarkOverlay";
 import EngagementCards from "@/components/EngagementCards";
 import GlowJourneySection from "@/components/GlowJourneySection";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import {
-  Share2, Download, ChevronRight, Loader2, Lock, ShoppingBag,
+  Share2, Download, ChevronRight, ChevronDown, Loader2, Lock, ShoppingBag,
   MessageCircle, Sparkles, Sun, Moon, Eye, Droplets, CalendarCheck,
-  Scan, Palette, Scissors, Shirt, TrendingUp, TrendingDown, Minus, ShieldCheck
+  Scan, Scissors, Shirt, TrendingUp, TrendingDown, Minus, ShieldCheck, Rocket, FileText
 } from "lucide-react";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, lazy, Suspense } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import confetti from "canvas-confetti";
@@ -95,9 +95,7 @@ function textureWording(score: number) {
 function getProgressText(current: number, prev: number | null, label: string): string | undefined {
   if (prev === null) return undefined;
   const diff = current - prev;
-  if (diff > 5) return `+${diff}%`;
   if (diff > 0) return `+${diff}%`;
-  if (diff < -5) return `${diff}%`;
   if (diff < 0) return `${diff}%`;
   return "Steady";
 }
@@ -119,6 +117,7 @@ const Results = () => {
   const [totalScans, setTotalScans] = useState(0);
   const [scansThisWeek, setScansThisWeek] = useState(0);
   const [history, setHistory] = useState<any[]>([]);
+  const [reportExpanded, setReportExpanded] = useState(false);
 
   const { analysis, loading } = passedId ? byId : latest;
 
@@ -200,10 +199,9 @@ const Results = () => {
   const improvement = previousAnalysis ? analysis.overall_score - previousAnalysis.overall_score : null;
   const analysisData = analysis.analysis_data;
 
-  // Extract real scores from analysis_data when available
   const skinDetails = analysisData?.skin?.details || [];
   const getDetail = (keyword: string) =>
-    skinDetails.find((d) => d.label.toLowerCase().includes(keyword));
+    skinDetails.find((d: any) => d.label.toLowerCase().includes(keyword));
 
   const hydrationScore = getDetail("hydration")?.value ?? getDetail("moisture")?.value ?? analysis.skin_score ?? 65;
   const acneScore = getDetail("acne")?.value ?? getDetail("blemish")?.value ?? getDetail("clarity")?.value ?? Math.max((analysis.skin_score ?? 70) - 8, 30);
@@ -213,61 +211,26 @@ const Results = () => {
   const prevSkinBase = previousAnalysis?.skin_score ?? null;
 
   const breakdowns = [
-    {
-      label: "Hydration",
-      score: hydrationScore,
-      color: "hsl(200, 80%, 55%)",
-      confidence: getConfidence(hydrationScore),
-      ...hydrationWording(hydrationScore),
-      trend: (improvement !== null ? (improvement > 0 ? "up" : improvement < 0 ? "down" : "neutral") : "neutral") as "up" | "down" | "neutral",
-      trendText: getProgressText(hydrationScore, prevSkinBase, "Hydration"),
-    },
-    {
-      label: "Acne & Breakout Risk",
-      score: acneScore,
-      color: "hsl(340, 70%, 55%)",
-      confidence: getConfidence(acneScore),
-      ...acneWording(acneScore),
-      trend: (improvement !== null ? (improvement > 0 ? "up" : improvement < 0 ? "down" : "neutral") : "neutral") as "up" | "down" | "neutral",
-      trendText: getProgressText(acneScore, prevSkinBase ? Math.max(prevSkinBase - 8, 30) : null, "Acne"),
-    },
-    {
-      label: "Dark Spots",
-      score: darkSpotScore,
-      color: "hsl(35, 80%, 55%)",
-      confidence: getConfidence(darkSpotScore),
-      ...darkSpotWording(darkSpotScore),
-      trend: (improvement !== null ? (improvement > 0 ? "up" : improvement < 0 ? "down" : "neutral") : "neutral") as "up" | "down" | "neutral",
-      trendText: getProgressText(darkSpotScore, prevSkinBase ? Math.max(prevSkinBase - 5, 30) : null, "Dark Spots"),
-    },
-    {
-      label: "Texture",
-      score: textureScore,
-      color: "hsl(160, 60%, 45%)",
-      confidence: getConfidence(textureScore),
-      ...textureWording(textureScore),
-      trend: (improvement !== null ? (improvement > 0 ? "up" : improvement < 0 ? "down" : "neutral") : "neutral") as "up" | "down" | "neutral",
-      trendText: getProgressText(textureScore, prevSkinBase, "Texture"),
-    },
+    { label: "Hydration", score: hydrationScore, color: "hsl(200, 80%, 55%)", confidence: getConfidence(hydrationScore), ...hydrationWording(hydrationScore), trend: (improvement !== null ? (improvement > 0 ? "up" : improvement < 0 ? "down" : "neutral") : "neutral") as "up" | "down" | "neutral", trendText: getProgressText(hydrationScore, prevSkinBase, "Hydration") },
+    { label: "Acne & Breakout Risk", score: acneScore, color: "hsl(340, 70%, 55%)", confidence: getConfidence(acneScore), ...acneWording(acneScore), trend: (improvement !== null ? (improvement > 0 ? "up" : improvement < 0 ? "down" : "neutral") : "neutral") as "up" | "down" | "neutral", trendText: getProgressText(acneScore, prevSkinBase ? Math.max(prevSkinBase - 8, 30) : null, "Acne") },
+    { label: "Dark Spots", score: darkSpotScore, color: "hsl(35, 80%, 55%)", confidence: getConfidence(darkSpotScore), ...darkSpotWording(darkSpotScore), trend: (improvement !== null ? (improvement > 0 ? "up" : improvement < 0 ? "down" : "neutral") : "neutral") as "up" | "down" | "neutral", trendText: getProgressText(darkSpotScore, prevSkinBase ? Math.max(prevSkinBase - 5, 30) : null, "Dark Spots") },
+    { label: "Texture", score: textureScore, color: "hsl(160, 60%, 45%)", confidence: getConfidence(textureScore), ...textureWording(textureScore), trend: (improvement !== null ? (improvement > 0 ? "up" : improvement < 0 ? "down" : "neutral") : "neutral") as "up" | "down" | "neutral", trendText: getProgressText(textureScore, prevSkinBase, "Texture") },
   ];
 
-  // AI insights — prefer real data, fallback to believable defaults
+  // AI insights
   const aiInsights: string[] = [];
   const skinDesc = analysisData?.skin?.description;
   if (skinDesc) {
-    // Extract short insights from the skin description
-    const sentences = skinDesc.split(/\.\s+/).filter((s) => s.length > 15 && s.length < 120);
+    const sentences = skinDesc.split(/\.\s+/).filter((s: string) => s.length > 15 && s.length < 120);
     aiInsights.push(...sentences.slice(0, 4));
   }
   if (aiInsights.length === 0 && analysisData?.skin?.tips) {
-    // Tips are often long paragraphs, extract first sentence from each
-    analysisData.skin.tips.forEach((tip) => {
+    analysisData.skin.tips.forEach((tip: string) => {
       const first = tip.split(/\.\s+/)[0];
       if (first && first.length < 120) aiInsights.push(first);
     });
   }
   if (aiInsights.length === 0) {
-    // Believable defaults based on scores
     if (hydrationScore < 75) aiInsights.push("Slight dryness observed around the cheek and forehead regions");
     else aiInsights.push("Healthy moisture balance detected across all facial zones");
     if (acneScore < 75) aiInsights.push("Mild pore congestion visible near the T-zone area");
@@ -278,42 +241,19 @@ const Results = () => {
     else aiInsights.push("Overall smooth texture with good surface consistency");
   }
 
-  // Routine from analysis data
   const morningRoutine = analysisData?.skin?.product_suggestions
-    ?.filter((_, i) => i < 2)
-    .map((p) => ({ name: p.name, reason: p.reason })) || [
+    ?.filter((_: any, i: number) => i < 2)
+    .map((p: any) => ({ name: p.name, reason: p.reason })) || [
     { name: "Gentle cleanser", reason: "Remove overnight buildup without stripping moisture" },
     { name: "Vitamin C serum", reason: "Antioxidant protection and brightening" },
   ];
   const nightRoutine = analysisData?.skin?.product_suggestions
-    ?.filter((_, i) => i >= 2 && i < 4)
-    .map((p) => ({ name: p.name, reason: p.reason })) || [
+    ?.filter((_: any, i: number) => i >= 2 && i < 4)
+    .map((p: any) => ({ name: p.name, reason: p.reason })) || [
     { name: "Hyaluronic acid", reason: "Deep hydration while you sleep" },
     { name: "Moisturizer", reason: "Lock in moisture and repair skin barrier" },
   ];
 
-  // Emotional feedback — more specific
-  const emotionalFeedback =
-    analysis.overall_score >= 85
-      ? "Your skin is glowing — your routine is clearly working ✨"
-      : analysis.overall_score >= 75
-      ? "Your skin looks healthy with room for a little extra glow ✨"
-      : analysis.overall_score >= 60
-      ? "Your skin has a solid foundation — small tweaks can unlock your best glow ✨"
-      : "Every great glow journey starts here — your skin has beautiful potential ✨";
-
-  // Progress encouragement
-  const progressMessage = improvement !== null
-    ? improvement > 5
-      ? "Your glow journey is moving in the right direction ✨ Keep going!"
-      : improvement > 0
-      ? "Slight improvement since your last scan — consistency is key ✨"
-      : improvement === 0
-      ? "Holding steady — your routine is maintaining your skin well"
-      : "A small dip is normal — factors like sleep, diet, and stress can affect results day to day"
-    : null;
-
-  // New personalized data
   const personalizedInsights = analysisData?.personalized_insights || aiInsights;
   const categoryBreakdown = analysisData?.category_breakdown;
   const glowPotential = analysisData?.glow_potential;
@@ -326,396 +266,482 @@ const Results = () => {
     { key: "acne_risk", label: "Acne Risk", icon: ShieldCheck, data: categoryBreakdown?.acne_risk, color: "from-emerald-500 to-teal-400" },
   ];
 
-  return (
-    <div className="p-4 md:p-10 max-w-3xl mx-auto space-y-6">
-      {/* === TOP SUMMARY === */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="glass-card rounded-3xl p-6 text-center space-y-4"
-      >
-        <h1 className="font-display text-2xl font-bold">Your AI Skin Report</h1>
-        <GlowScoreGauge score={analysis.overall_score} size={200} label="Your Glow Score" />
-        {improvement !== null && (
-          <p className={`text-sm font-medium ${improvement >= 0 ? "text-emerald-500" : "text-amber-500"}`}>
-            {improvement >= 0 ? "+" : ""}{improvement} from last scan
-          </p>
-        )}
-        <p className="text-sm text-muted-foreground italic">{emotionalFeedback}</p>
-        {progressMessage && (
-          <p className="text-xs text-muted-foreground/80">{progressMessage}</p>
-        )}
+  // Top 2 highlight categories for the compact view
+  const highlightCategories = [
+    { label: "Skin Quality", score: analysis.skin_score ?? 0, icon: Droplets },
+    { label: "Symmetry", score: analysis.symmetry_score ?? 0, icon: Scan },
+  ];
 
-        {/* AI Confidence Badge */}
-        {aiConfidence && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.3 }}
-            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-muted/60 border border-border"
-          >
-            <ShieldCheck className={`w-3.5 h-3.5 ${
-              aiConfidence.level === "high" ? "text-emerald-500" :
-              aiConfidence.level === "moderate" ? "text-amber-500" : "text-muted-foreground"
-            }`} />
-            <span className="text-xs font-medium">
-              Confidence: <span className={
+  return (
+    <div className="pb-24 md:pb-6">
+      <div className="p-4 md:p-10 max-w-3xl mx-auto space-y-5">
+
+        {/* ═══════════════════════════════════════════
+            1. HERO SECTION — ABOVE THE FOLD
+        ═══════════════════════════════════════════ */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="glass-card rounded-3xl p-6 text-center space-y-3 relative overflow-hidden"
+        >
+          {/* Ambient glow */}
+          <div className="absolute inset-0 pointer-events-none" style={{
+            background: "radial-gradient(ellipse at 50% 30%, hsl(var(--glow-purple) / 0.08) 0%, transparent 60%)"
+          }} />
+
+          <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-medium relative">AI Skin Report</p>
+
+          <div className="relative">
+            <GlowScoreGauge score={analysis.overall_score} size={180} label="Your Glow Score" />
+          </div>
+
+          {/* Improvement badge */}
+          {improvement !== null && (
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ delay: 0.4, type: "spring" }}
+              className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${
+                improvement > 0
+                  ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
+                  : improvement === 0
+                  ? "bg-muted/40 text-muted-foreground border border-border/30"
+                  : "bg-amber-500/10 text-amber-400 border border-amber-500/20"
+              }`}
+            >
+              {improvement > 0 ? <TrendingUp className="w-3 h-3" /> : improvement < 0 ? <TrendingDown className="w-3 h-3" /> : <Minus className="w-3 h-3" />}
+              {improvement > 0 ? `+${improvement}` : improvement} from last scan
+            </motion.div>
+          )}
+
+          {/* AI Confidence */}
+          {aiConfidence && (
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-muted/30 border border-border/20">
+              <ShieldCheck className={`w-3 h-3 ${
                 aiConfidence.level === "high" ? "text-emerald-500" :
                 aiConfidence.level === "moderate" ? "text-amber-500" : "text-muted-foreground"
-              }>{aiConfidence.level.charAt(0).toUpperCase() + aiConfidence.level.slice(1)}</span>
-            </span>
-            <span className="text-[10px] text-muted-foreground">({aiConfidence.reason})</span>
+              }`} />
+              <span className="text-[10px] text-muted-foreground">{aiConfidence.level} confidence</span>
+            </div>
+          )}
+
+          {/* 2–3 key insights only */}
+          <div className="space-y-1.5 pt-1">
+            {personalizedInsights.slice(0, 3).map((insight: string, i: number) => (
+              <motion.p
+                key={i}
+                initial={{ opacity: 0, x: -8 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.3 + i * 0.1 }}
+                className="text-xs text-foreground/80 leading-relaxed flex items-start gap-2"
+              >
+                <span className="w-1 h-1 rounded-full bg-primary mt-1.5 shrink-0" />
+                {insight}
+              </motion.p>
+            ))}
+          </div>
+
+          {/* Quick share */}
+          <div className="flex justify-center gap-2 pt-1">
+            <Button
+              size="sm"
+              variant="ghost"
+              className="gap-1.5 text-[10px] h-7 text-muted-foreground rounded-xl"
+              onClick={() => {
+                const text = `I got ${analysis.overall_score}% glow score 😎 Can you beat me?`;
+                const url = window.location.origin;
+                window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(`${text} ${url}`)}`, "_blank");
+              }}
+            >
+              <MessageCircle className="w-3 h-3" /> Share
+            </Button>
+            <Button size="sm" variant="ghost" className="gap-1.5 text-[10px] h-7 text-muted-foreground rounded-xl" asChild>
+              <Link to="/share"><Share2 className="w-3 h-3" /> Link</Link>
+            </Button>
+          </div>
+        </motion.div>
+
+        {/* ═══════════════════════════════════════════
+            2. BEFORE vs AFTER — HIGH PRIORITY
+        ═══════════════════════════════════════════ */}
+        {previousAnalysis && (
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+            <BeforeAfterComparison
+              previousPhotoUrl={previousAnalysis.photo_url}
+              currentPhotoUrl={analysis.photo_url}
+              previousScore={previousAnalysis.overall_score}
+              currentScore={analysis.overall_score}
+              previousSkinScore={previousAnalysis.skin_score}
+              currentSkinScore={analysis.skin_score}
+            />
           </motion.div>
         )}
-      </motion.div>
 
-      {/* === FACE LANDMARK OVERLAY === */}
-      <FaceLandmarkOverlay
-        photoUrl={analysis.photo_url}
-        overallScore={analysis.overall_score}
-        skinScore={analysis.skin_score}
-        acneScore={acneScore}
-        darkSpotScore={darkSpotScore}
-      />
-
-      {/* === PERSONALIZED INSIGHTS === */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
-        className="glass-card rounded-3xl p-5 space-y-3"
-      >
-        <div className="flex items-center gap-2">
-          <Eye className="w-4 h-4 text-primary" />
-          <h2 className="font-display font-semibold text-sm">Personalized Insights</h2>
-        </div>
-        <p className="text-[10px] text-muted-foreground">Unique observations based on your face analysis</p>
-        <div className="space-y-2">
-          {personalizedInsights.slice(0, 5).map((insight, i) => (
-            <motion.div
-              key={i}
-              initial={{ opacity: 0, x: -10 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.15 + i * 0.08 }}
-              className="flex items-start gap-2.5 text-xs text-foreground/90 leading-relaxed bg-muted/30 rounded-xl px-3 py-2"
-            >
-              <span className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 shrink-0" />
-              {insight}
-            </motion.div>
-          ))}
-        </div>
-      </motion.div>
-
-      {/* === CATEGORY BREAKDOWN (New 4 categories) === */}
-      {categoryBreakdown && (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.15 }}>
-          <div className="flex items-center justify-between mb-3 px-1">
-            <h2 className="font-display text-lg font-bold">Category Breakdown</h2>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {categoryCards.map((cat, i) => {
-              const data = cat.data;
-              if (!data) return null;
+        {/* ═══════════════════════════════════════════
+            3. CATEGORY HIGHLIGHTS — TOP 2 ONLY
+        ═══════════════════════════════════════════ */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15 }}
+          className="space-y-3"
+        >
+          <div className="grid grid-cols-2 gap-3">
+            {highlightCategories.map((cat, i) => {
               const Icon = cat.icon;
+              const score = cat.score;
               return (
                 <motion.div
-                  key={cat.key}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
+                  key={cat.label}
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
                   transition={{ delay: 0.2 + i * 0.08 }}
-                  className="glass-card rounded-2xl p-4 space-y-3"
+                  className="glass-card rounded-2xl p-4 space-y-2"
                 >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className={`w-8 h-8 rounded-xl bg-gradient-to-br ${cat.color} flex items-center justify-center`}>
-                        <Icon className="w-4 h-4 text-white" />
-                      </div>
-                      <p className="text-sm font-semibold text-foreground">{cat.label}</p>
+                  <div className="flex items-center gap-2">
+                    <div className="w-7 h-7 rounded-xl bg-primary/10 flex items-center justify-center">
+                      <Icon className="w-3.5 h-3.5 text-primary" />
                     </div>
-                    <AnimatedCounter value={`${data.score}%`} className="text-xl font-display font-bold gradient-text" />
+                    <p className="text-xs font-semibold text-foreground">{cat.label}</p>
                   </div>
-                  <div className="w-full h-1.5 rounded-full bg-muted overflow-hidden">
+                  <AnimatedCounter value={`${score}%`} className="text-2xl font-display font-bold gradient-text" />
+                  <div className="w-full h-1.5 rounded-full bg-muted/40 overflow-hidden">
                     <motion.div
-                      className="h-full rounded-full bg-primary"
+                      className="h-full rounded-full"
+                      style={{ background: "linear-gradient(90deg, hsl(var(--glow-purple)), hsl(var(--glow-pink)))" }}
                       initial={{ width: 0 }}
-                      animate={{ width: `${data.score}%` }}
-                      transition={{ duration: 0.8, delay: 0.3 + i * 0.08, ease: "easeOut" }}
+                      animate={{ width: `${score}%` }}
+                      transition={{ duration: 1, delay: 0.3 + i * 0.1, ease: "easeOut" }}
                     />
-                  </div>
-                  <p className="text-xs text-foreground/80 leading-relaxed">{data.explanation}</p>
-                  <div className="flex items-start gap-1.5 text-[10px] text-primary bg-primary/5 rounded-lg px-2.5 py-1.5">
-                    <Sparkles className="w-3 h-3 mt-0.5 shrink-0" />
-                    <span>{data.suggestion}</span>
                   </div>
                 </motion.div>
               );
             })}
           </div>
-        </motion.div>
-      )}
 
-      {/* === GLOW POTENTIAL SCORE === */}
-      {glowPotential && (
+          {/* View Full Analysis link */}
+          <Link to="/results/skin" className="block">
+            <div className="flex items-center justify-center gap-2 py-2 text-xs font-medium text-primary hover:text-primary/80 transition-colors">
+              <Eye className="w-3.5 h-3.5" />
+              View Full Analysis
+              <ChevronRight className="w-3.5 h-3.5" />
+            </div>
+          </Link>
+        </motion.div>
+
+        {/* ═══════════════════════════════════════════
+            4. GLOW POTENTIAL — PROMINENT
+        ═══════════════════════════════════════════ */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.25 }}
-          className="glass-card rounded-3xl p-5 text-center space-y-3 border border-primary/20"
-        >
-          <div className="flex items-center justify-center gap-2">
-            <TrendingUp className="w-5 h-5 text-primary" />
-            <h2 className="font-display font-semibold text-base">Glow Potential</h2>
-          </div>
-          <div className="flex items-center justify-center gap-2">
-            <span className="text-3xl font-display font-bold gradient-text">+{glowPotential.improvement_percent}%</span>
-          </div>
-          <p className="text-xs text-muted-foreground leading-relaxed max-w-sm mx-auto">{glowPotential.message}</p>
-        </motion.div>
-      )}
-
-      {/* === 2. DETAILED ANALYSIS (AI Feature Breakdown) === */}
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.15 }}>
-        <div className="flex items-center justify-between mb-3 px-1">
-          <h2 className="font-display text-lg font-bold">AI Feature Breakdown</h2>
-          <span className="text-[10px] text-muted-foreground">Supporting proof metrics</span>
-        </div>
-        <div className="grid grid-cols-2 gap-3">
-          {[
-            { key: "symmetry", label: "Face Symmetry", icon: Scan, link: "/results/symmetry", score: analysis.symmetry_score, premium: false },
-            { key: "skin", label: "Skin Quality", icon: Droplets, link: "/results/skin", score: analysis.skin_score, premium: false },
-            { key: "hairstyle", label: "Hairstyle Match", icon: Scissors, link: "/results/hairstyle", score: analysis.hairstyle_score, premium: true },
-            { key: "style", label: "Style Rating", icon: Shirt, link: "/results/style", score: analysis.style_score, premium: true },
-          ].map((item, i) => {
-            const locked = item.premium && !isPaid;
-            const Icon = item.icon;
-            const score = item.score ?? 0;
-            const conf = score >= 70 ? "High" : score >= 45 ? "Moderate" : "Early";
-            const confColor = score >= 70 ? "text-emerald-500" : score >= 45 ? "text-amber-500" : "text-muted-foreground";
-            const trendDir = improvement !== null ? (improvement > 0 ? "up" : improvement < 0 ? "down" : "neutral") : "neutral";
-            const TrendIcon = trendDir === "up" ? TrendingUp : trendDir === "down" ? TrendingDown : Minus;
-            const trendColor = trendDir === "up" ? "text-emerald-500" : trendDir === "down" ? "text-red-400" : "text-muted-foreground";
-
-            return (
-              <motion.div
-                key={item.key}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2 + i * 0.06 }}
-              >
-                {locked ? (
-                  <div className="glass-card rounded-2xl p-4 opacity-60 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <div className="w-7 h-7 rounded-xl bg-muted flex items-center justify-center">
-                          <Icon className="w-3.5 h-3.5 text-muted-foreground" />
-                        </div>
-                        <p className="text-xs font-semibold text-muted-foreground">{item.label}</p>
-                      </div>
-                      <Lock className="w-3.5 h-3.5 text-muted-foreground" />
-                    </div>
-                    <p className="text-xl font-display font-bold text-muted-foreground">🔒</p>
-                    <p className="text-[10px] text-muted-foreground">Upgrade to unlock</p>
-                  </div>
-                ) : (
-                  <Link to={item.link}>
-                    <div className="glass-card rounded-2xl p-4 hover:shadow-md transition-shadow cursor-pointer group space-y-2">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <div className="w-7 h-7 rounded-xl bg-primary/10 flex items-center justify-center">
-                            <Icon className="w-3.5 h-3.5 text-primary" />
-                          </div>
-                          <p className="text-xs font-semibold text-foreground">{item.label}</p>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <TrendIcon className={`w-3 h-3 ${trendColor}`} />
-                          <ChevronRight className="w-3.5 h-3.5 text-muted-foreground group-hover:text-primary transition-colors" />
-                        </div>
-                      </div>
-                      <div className="flex items-end justify-between">
-                        <AnimatedCounter value={`${item.score ?? 0}%`} className="text-2xl font-display font-bold gradient-text" />
-                        <div className="flex items-center gap-1 mb-1">
-                          <ShieldCheck className={`w-3 h-3 ${confColor}`} />
-                          <span className={`text-[9px] font-medium ${confColor}`}>{conf}</span>
-                        </div>
-                      </div>
-                      <div className="w-full h-1.5 rounded-full bg-muted overflow-hidden">
-                        <motion.div
-                          className="h-full rounded-full bg-primary"
-                          initial={{ width: 0 }}
-                          animate={{ width: `${score}%` }}
-                          transition={{ duration: 0.8, delay: 0.3 + i * 0.06, ease: "easeOut" }}
-                        />
-                      </div>
-                    </div>
-                  </Link>
-                )}
-              </motion.div>
-            );
-          })}
-        </div>
-      </motion.div>
-
-      {/* === 3. BEFORE VS AFTER COMPARISON === */}
-      {previousAnalysis && (
-        <BeforeAfterComparison
-          previousPhotoUrl={previousAnalysis.photo_url}
-          currentPhotoUrl={analysis.photo_url}
-          previousScore={previousAnalysis.overall_score}
-          currentScore={analysis.overall_score}
-          previousSkinScore={previousAnalysis.skin_score}
-          currentSkinScore={analysis.skin_score}
-        />
-      )}
-
-      {/* === 4. SKIN BREAKDOWN === */}
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }}>
-        <div className="flex items-center justify-between mb-3 px-1">
-          <h2 className="font-display text-lg font-bold">Skin Breakdown</h2>
-          <span className="text-[10px] text-muted-foreground">Based on visible surface patterns</span>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {breakdowns.map((b, i) => (
-            <SkinBreakdownCard
-              key={b.label}
-              label={b.label}
-              score={b.score}
-              reasoning={b.reasoning}
-              action={b.action}
-              confidence={b.confidence}
-              color={b.color}
-              trend={b.trend}
-              trendText={b.trendText}
-              delay={0.35 + i * 0.08}
-            />
-          ))}
-        </div>
-      </motion.div>
-
-      {/* Old "Why AI Gave This Result" replaced by Personalized Insights above */}
-
-      {/* === 6. PERSONALIZED ROUTINE === */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.6 }}
-        className="glass-card rounded-3xl p-5 space-y-4"
-      >
-        <h3 className="font-display font-semibold text-sm flex items-center gap-2">
-          <Sparkles className="w-4 h-4 text-primary" />
-          Your Personalized Routine
-        </h3>
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-3">
-            <div className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
-              <Sun className="w-3.5 h-3.5 text-amber-500" />
-              Morning
-            </div>
-            {morningRoutine.map((item, i) => (
-              <div key={i} className="pl-5 space-y-0.5">
-                <p className="text-xs font-medium text-foreground">• {item.name}</p>
-                <p className="text-[10px] text-muted-foreground leading-relaxed">{item.reason}</p>
-              </div>
-            ))}
-          </div>
-          <div className="space-y-3">
-            <div className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
-              <Moon className="w-3.5 h-3.5 text-indigo-400" />
-              Night
-            </div>
-            {nightRoutine.map((item, i) => (
-              <div key={i} className="pl-5 space-y-0.5">
-                <p className="text-xs font-medium text-foreground">• {item.name}</p>
-                <p className="text-[10px] text-muted-foreground leading-relaxed">{item.reason}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-        <Button className="w-full gradient-bg border-0 text-primary-foreground gap-2 rounded-2xl" asChild>
-          <Link to="/products" state={{ fromAnalysis: true, analysisId: analysis.id }}>
-            <CalendarCheck className="w-4 h-4" />
-            Start 7-Day Glow Plan
-          </Link>
-        </Button>
-      </motion.div>
-
-      {/* === 7. WEEKLY PROGRESS GRAPH === */}
-      {history.length >= 2 && (
-        <GlowJourneySection
-          history={history}
-          streak={(() => {
-            if (history.length === 0) return 0;
-            let count = 1;
-            for (let i = 1; i < history.length; i++) {
-              const diff = (new Date(history[i - 1].created_at).getTime() - new Date(history[i].created_at).getTime()) / (1000 * 60 * 60 * 24);
-              if (diff <= 1.5) count++;
-              else break;
-            }
-            return count;
-          })()}
-          isPaid={isPaid}
-        />
-      )}
-
-      {/* === 8. HISTORY / PREMIUM LOCK === */}
-      {!isPaid && (
-        <UpgradePrompt compact description="Unlock Hairstyle & Style analysis, daily tracking, and premium insights." />
-      )}
-
-      {/* === PRODUCT RECO CTA === */}
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.85 }}>
-        <Link to="/products" state={{ fromAnalysis: true, analysisId: analysis.id }}>
-          <Card className="rounded-3xl gradient-bg-subtle border-0 hover:shadow-lg transition-shadow cursor-pointer group">
-            <CardContent className="p-5 flex items-center gap-4">
-              <div className="w-12 h-12 rounded-2xl gradient-bg flex items-center justify-center shrink-0">
-                <ShoppingBag className="w-6 h-6 text-primary-foreground" />
-              </div>
-              <div className="flex-1">
-                <h3 className="font-display font-semibold text-sm">Product Recommendations</h3>
-                <p className="text-xs text-muted-foreground">Personalized products based on your analysis</p>
-              </div>
-              <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
-            </CardContent>
-          </Card>
-        </Link>
-      </motion.div>
-
-      <div className="flex flex-wrap gap-2.5 justify-center">
-        <Button
-          size="sm"
-          className="gap-1.5 text-primary-foreground border-0 rounded-2xl"
-          style={{ backgroundColor: "hsl(142, 70%, 40%)" }}
-          onClick={() => {
-            const text = `Check out my FaceNova score: ${analysis.overall_score}/100! ✨ Get your free analysis:`;
-            const url = window.location.origin;
-            window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(`${text} ${url}`)}`, "_blank");
+          transition={{ delay: 0.2 }}
+          className="relative rounded-3xl p-5 text-center space-y-2 overflow-hidden border border-primary/20"
+          style={{
+            background: "linear-gradient(135deg, hsl(var(--glow-purple) / 0.12) 0%, hsl(var(--glow-pink) / 0.08) 100%)",
           }}
         >
-          <MessageCircle className="w-3.5 h-3.5" />
-          WhatsApp
-        </Button>
-        <Button variant="outline" size="sm" className="gap-1.5 rounded-2xl" asChild>
-          <Link to="/share"><Share2 className="w-3.5 h-3.5" /> Share</Link>
-        </Button>
-        {isPaid ? (
-          <Button variant="outline" size="sm" className="gap-1.5 rounded-2xl" asChild>
-            <Link to="/download"><Download className="w-3.5 h-3.5" /> Download</Link>
+          <div className="absolute inset-0 pointer-events-none" style={{
+            background: "radial-gradient(circle at 50% 50%, hsl(var(--glow-purple) / 0.06) 0%, transparent 70%)"
+          }} />
+          <div className="relative flex items-center justify-center gap-2">
+            <TrendingUp className="w-5 h-5 text-primary" />
+            <h2 className="font-display font-semibold text-sm">Glow Potential</h2>
+          </div>
+          <motion.span
+            initial={{ scale: 0.5, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ delay: 0.4, type: "spring" }}
+            className="relative block text-3xl font-display font-extrabold gradient-text"
+          >
+            +{glowPotential?.improvement_percent ?? 15}%
+          </motion.span>
+          <p className="relative text-xs text-muted-foreground max-w-xs mx-auto">
+            {glowPotential?.message ?? "You can improve with consistent skincare and daily tracking"}
+          </p>
+        </motion.div>
+
+        {/* ═══════════════════════════════════════════
+            5. AI FACE LANDMARK OVERLAY
+        ═══════════════════════════════════════════ */}
+        <FaceLandmarkOverlay
+          photoUrl={analysis.photo_url}
+          overallScore={analysis.overall_score}
+          skinScore={analysis.skin_score}
+          acneScore={acneScore}
+          darkSpotScore={darkSpotScore}
+        />
+
+        {/* ═══════════════════════════════════════════
+            6. PERSONALIZED ROUTINE (compact)
+        ═══════════════════════════════════════════ */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          className="glass-card rounded-3xl p-5 space-y-3"
+        >
+          <h3 className="font-display font-semibold text-sm flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-primary" />
+            Your Routine
+          </h3>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-2">
+              <div className="flex items-center gap-1.5 text-[11px] font-semibold text-foreground">
+                <Sun className="w-3 h-3 text-amber-500" /> Morning
+              </div>
+              {morningRoutine.map((item: any, i: number) => (
+                <p key={i} className="text-[10px] text-foreground/80 pl-4">• {item.name}</p>
+              ))}
+            </div>
+            <div className="space-y-2">
+              <div className="flex items-center gap-1.5 text-[11px] font-semibold text-foreground">
+                <Moon className="w-3 h-3 text-indigo-400" /> Night
+              </div>
+              {nightRoutine.map((item: any, i: number) => (
+                <p key={i} className="text-[10px] text-foreground/80 pl-4">• {item.name}</p>
+              ))}
+            </div>
+          </div>
+        </motion.div>
+
+        {/* ═══════════════════════════════════════════
+            7. COLLAPSIBLE FULL REPORT
+        ═══════════════════════════════════════════ */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.35 }}
+        >
+          <button
+            onClick={() => setReportExpanded(!reportExpanded)}
+            className="w-full glass-card rounded-2xl px-5 py-3.5 flex items-center justify-between group hover:border-primary/20 transition-all"
+          >
+            <div className="flex items-center gap-2">
+              <FileText className="w-4 h-4 text-primary" />
+              <span className="font-display font-semibold text-sm">View Full Report</span>
+            </div>
+            <motion.div
+              animate={{ rotate: reportExpanded ? 180 : 0 }}
+              transition={{ duration: 0.3 }}
+            >
+              <ChevronDown className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
+            </motion.div>
+          </button>
+
+          <AnimatePresence>
+            {reportExpanded && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: "auto", opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.4, ease: "easeInOut" }}
+                className="overflow-hidden"
+              >
+                <div className="space-y-5 pt-4">
+
+                  {/* Full Personalized Insights */}
+                  <div className="glass-card rounded-2xl p-4 space-y-2">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Eye className="w-3.5 h-3.5 text-primary" />
+                      <h4 className="font-display font-semibold text-xs">All Insights</h4>
+                    </div>
+                    {personalizedInsights.map((insight: string, i: number) => (
+                      <div key={i} className="flex items-start gap-2 text-[11px] text-foreground/80 leading-relaxed">
+                        <span className="w-1 h-1 rounded-full bg-primary mt-1.5 shrink-0" />
+                        {insight}
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Category Breakdown */}
+                  {categoryBreakdown && (
+                    <div className="space-y-3">
+                      <h4 className="font-display font-semibold text-xs px-1">Category Breakdown</h4>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        {categoryCards.map((cat, i) => {
+                          const data = cat.data;
+                          if (!data) return null;
+                          const Icon = cat.icon;
+                          return (
+                            <div key={cat.key} className="glass-card rounded-2xl p-3 space-y-2">
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                  <div className={`w-6 h-6 rounded-lg bg-gradient-to-br ${cat.color} flex items-center justify-center`}>
+                                    <Icon className="w-3 h-3 text-white" />
+                                  </div>
+                                  <p className="text-[11px] font-semibold text-foreground">{cat.label}</p>
+                                </div>
+                                <span className="text-sm font-display font-bold gradient-text">{data.score}%</span>
+                              </div>
+                              <div className="w-full h-1 rounded-full bg-muted/30 overflow-hidden">
+                                <div className="h-full rounded-full bg-primary" style={{ width: `${data.score}%` }} />
+                              </div>
+                              <p className="text-[10px] text-foreground/70 leading-relaxed">{data.explanation}</p>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* AI Feature Breakdown */}
+                  <div className="space-y-3">
+                    <h4 className="font-display font-semibold text-xs px-1">AI Feature Breakdown</h4>
+                    <div className="grid grid-cols-2 gap-2">
+                      {[
+                        { key: "symmetry", label: "Face Symmetry", icon: Scan, link: "/results/symmetry", score: analysis.symmetry_score, premium: false },
+                        { key: "skin", label: "Skin Quality", icon: Droplets, link: "/results/skin", score: analysis.skin_score, premium: false },
+                        { key: "hairstyle", label: "Hairstyle Match", icon: Scissors, link: "/results/hairstyle", score: analysis.hairstyle_score, premium: true },
+                        { key: "style", label: "Style Rating", icon: Shirt, link: "/results/style", score: analysis.style_score, premium: true },
+                      ].map((item) => {
+                        const locked = item.premium && !isPaid;
+                        const Icon = item.icon;
+                        const score = item.score ?? 0;
+                        return (
+                          <div key={item.key}>
+                            {locked ? (
+                              <div className="glass-card rounded-xl p-3 opacity-50 space-y-1">
+                                <div className="flex items-center gap-1.5">
+                                  <Icon className="w-3 h-3 text-muted-foreground" />
+                                  <p className="text-[10px] font-semibold text-muted-foreground">{item.label}</p>
+                                  <Lock className="w-2.5 h-2.5 text-muted-foreground ml-auto" />
+                                </div>
+                                <p className="text-[10px] text-muted-foreground">Upgrade to unlock</p>
+                              </div>
+                            ) : (
+                              <Link to={item.link}>
+                                <div className="glass-card rounded-xl p-3 hover:border-primary/20 transition-all space-y-1 group">
+                                  <div className="flex items-center gap-1.5">
+                                    <Icon className="w-3 h-3 text-primary" />
+                                    <p className="text-[10px] font-semibold text-foreground">{item.label}</p>
+                                    <ChevronRight className="w-2.5 h-2.5 text-muted-foreground ml-auto group-hover:text-primary transition-colors" />
+                                  </div>
+                                  <p className="text-lg font-display font-bold gradient-text">{score}%</p>
+                                </div>
+                              </Link>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Skin Breakdown */}
+                  <div className="space-y-3">
+                    <h4 className="font-display font-semibold text-xs px-1">Skin Breakdown</h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {breakdowns.map((b, i) => (
+                        <SkinBreakdownCard
+                          key={b.label}
+                          label={b.label}
+                          score={b.score}
+                          reasoning={b.reasoning}
+                          action={b.action}
+                          confidence={b.confidence}
+                          color={b.color}
+                          trend={b.trend}
+                          trendText={b.trendText}
+                          delay={0}
+                        />
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Weekly Progress */}
+                  {history.length >= 2 && (
+                    <GlowJourneySection
+                      history={history}
+                      streak={(() => {
+                        if (history.length === 0) return 0;
+                        let count = 1;
+                        for (let i = 1; i < history.length; i++) {
+                          const diff = (new Date(history[i - 1].created_at).getTime() - new Date(history[i].created_at).getTime()) / (1000 * 60 * 60 * 24);
+                          if (diff <= 1.5) count++;
+                          else break;
+                        }
+                        return count;
+                      })()}
+                      isPaid={isPaid}
+                    />
+                  )}
+
+                  {/* Product Reco */}
+                  <Link to="/products" state={{ fromAnalysis: true, analysisId: analysis.id }}>
+                    <Card className="rounded-2xl gradient-bg-subtle border-0 hover:shadow-lg transition-shadow cursor-pointer group">
+                      <CardContent className="p-4 flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl gradient-bg flex items-center justify-center shrink-0">
+                          <ShoppingBag className="w-5 h-5 text-primary-foreground" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-display font-semibold text-xs">Product Recommendations</h3>
+                          <p className="text-[10px] text-muted-foreground">Personalized for your skin</p>
+                        </div>
+                        <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-primary" />
+                      </CardContent>
+                    </Card>
+                  </Link>
+
+                  {/* Upgrade prompt */}
+                  {!isPaid && (
+                    <UpgradePrompt compact description="Unlock Hairstyle & Style analysis, daily tracking, and premium insights." />
+                  )}
+
+                  {/* Trust badges */}
+                  <TrustBadges />
+
+                  {/* Engagement */}
+                  <EngagementCards scansThisWeek={scansThisWeek} isPaid={isPaid} totalScans={totalScans} />
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </motion.div>
+
+        {/* Share / Download row */}
+        <div className="flex flex-wrap gap-2 justify-center">
+          <Button
+            size="sm"
+            variant="outline"
+            className="gap-1.5 rounded-xl text-[11px] h-8"
+            asChild
+          >
+            <Link to="/share"><Share2 className="w-3 h-3" /> Share Result</Link>
           </Button>
-        ) : (
-          <Button variant="outline" size="sm" className="gap-1.5 opacity-60 rounded-2xl" asChild>
-            <Link to="/plans"><Lock className="w-3.5 h-3.5" /> Download (Pro)</Link>
-          </Button>
-        )}
+          {isPaid ? (
+            <Button size="sm" variant="outline" className="gap-1.5 rounded-xl text-[11px] h-8" asChild>
+              <Link to="/download"><Download className="w-3 h-3" /> Download</Link>
+            </Button>
+          ) : (
+            <Button size="sm" variant="outline" className="gap-1.5 rounded-xl text-[11px] h-8 opacity-60" asChild>
+              <Link to="/plans"><Lock className="w-3 h-3" /> Download (Pro)</Link>
+            </Button>
+          )}
+        </div>
+
       </div>
 
-      {/* === TRUST BADGES === */}
-      <TrustBadges />
-
-      {/* === ENGAGEMENT & PREMIUM === */}
-      <EngagementCards
-        scansThisWeek={scansThisWeek}
-        isPaid={isPaid}
-        totalScans={totalScans}
-      />
+      {/* ═══════════════════════════════════════════
+          8. STICKY CTA
+      ═══════════════════════════════════════════ */}
+      <div className="fixed bottom-16 md:bottom-0 left-0 right-0 z-40 p-3 md:p-4"
+        style={{
+          background: "linear-gradient(to top, hsl(0 0% 3% / 0.95) 60%, transparent 100%)",
+          backdropFilter: "blur(16px)",
+        }}
+      >
+        <div className="max-w-3xl mx-auto">
+          <Button
+            className="w-full gradient-bg border-0 text-primary-foreground btn-glow rounded-2xl h-12 text-sm font-semibold gap-2 shadow-lg"
+            asChild
+          >
+            <Link to="/products" state={{ fromAnalysis: true, analysisId: analysis.id }}>
+              <Rocket className="w-4 h-4" />
+              Improve My Glow
+            </Link>
+          </Button>
+        </div>
+      </div>
     </div>
   );
 };
