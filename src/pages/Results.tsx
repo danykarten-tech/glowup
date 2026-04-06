@@ -369,8 +369,8 @@ const Results = () => {
         )}
       </motion.div>
 
-      {/* === FACE ANALYSIS OVERLAY === */}
-      <FaceAnalysisOverlay
+      {/* === FACE LANDMARK OVERLAY === */}
+      <FaceLandmarkOverlay
         photoUrl={analysis.photo_url}
         overallScore={analysis.overall_score}
         skinScore={analysis.skin_score}
