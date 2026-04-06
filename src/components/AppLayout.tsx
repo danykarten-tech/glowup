@@ -1,5 +1,5 @@
 import { Link, useLocation, Outlet } from "react-router-dom";
-import { LayoutDashboard, Upload, History, Settings, User, ShoppingBag, Crown, MessageSquare, Shield } from "lucide-react";
+import { LayoutDashboard, Upload, History, Settings, User, ShoppingBag, Crown, MessageSquare, Shield, Flame } from "lucide-react";
 import FaceNovaLogo from "@/components/FaceNovaLogo";
 import InstallPrompt from "@/components/InstallPrompt";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
@@ -10,6 +10,7 @@ const sidebarLinks = [
   { label: "History", href: "/history", icon: History },
   { label: "Products", href: "/products", icon: ShoppingBag },
   { label: "Plans & Pricing", href: "/plans", icon: Crown },
+  { label: "Glow Challenge", href: "/glow-challenge", icon: Flame },
   { label: "Support", href: "/support", icon: MessageSquare },
   { label: "Settings", href: "/settings", icon: Settings },
   { label: "Profile", href: "/profile", icon: User },

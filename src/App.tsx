@@ -42,6 +42,7 @@ import PaymentHistory from "./pages/PaymentHistory";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
 import NotFound from "./pages/NotFound";
+import GlowChallenge from "./pages/GlowChallenge";
 
 const queryClient = new QueryClient();
 
@@ -96,6 +97,7 @@ const App = () => (
                 <Route path="/admin/products" element={<AdminGuard><AdminProducts /></AdminGuard>} />
                 <Route path="/admin/dashboard" element={<AdminGuard><AdminDashboard /></AdminGuard>} />
                 <Route path="/support" element={<Support />} />
+                <Route path="/glow-challenge" element={<GlowChallenge />} />
                 <Route path="/payment-history" element={<PaymentHistory />} />
               </Route>
 
