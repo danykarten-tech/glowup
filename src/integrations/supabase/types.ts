@@ -107,6 +107,39 @@ export type Database = {
         }
         Relationships: []
       }
+      glow_challenges: {
+        Row: {
+          challenged_friend_contact: string | null
+          challenged_friend_name: string | null
+          challenger_id: string
+          challenger_name: string | null
+          challenger_score: number
+          created_at: string
+          id: string
+          status: string
+        }
+        Insert: {
+          challenged_friend_contact?: string | null
+          challenged_friend_name?: string | null
+          challenger_id: string
+          challenger_name?: string | null
+          challenger_score: number
+          created_at?: string
+          id?: string
+          status?: string
+        }
+        Update: {
+          challenged_friend_contact?: string | null
+          challenged_friend_name?: string | null
+          challenger_id?: string
+          challenger_name?: string | null
+          challenger_score?: number
+          created_at?: string
+          id?: string
+          status?: string
+        }
+        Relationships: []
+      }
       page_views: {
         Row: {
           created_at: string
