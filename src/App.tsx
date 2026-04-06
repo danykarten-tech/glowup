@@ -42,6 +42,7 @@ import PaymentHistory from "./pages/PaymentHistory";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
 import NotFound from "./pages/NotFound";
+import GlowChallenge from "./pages/GlowChallenge";
 
 const queryClient = new QueryClient();
 
