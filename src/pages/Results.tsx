@@ -8,7 +8,7 @@ import { useLatestAnalysis, useAnalysisById } from "@/hooks/useLatestAnalysis";
 import { usePlan } from "@/hooks/usePlan";
 import UpgradePrompt from "@/components/UpgradePrompt";
 import BeforeAfterComparison from "@/components/BeforeAfterComparison";
-import FaceAnalysisOverlay from "@/components/FaceAnalysisOverlay";
+import FaceLandmarkOverlay from "@/components/FaceLandmarkOverlay";
 import EngagementCards from "@/components/EngagementCards";
 import GlowJourneySection from "@/components/GlowJourneySection";
 import { motion } from "framer-motion";
