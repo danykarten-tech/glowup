@@ -10,6 +10,7 @@ const sidebarLinks = [
   { label: "History", href: "/history", icon: History },
   { label: "Products", href: "/products", icon: ShoppingBag },
   { label: "Plans & Pricing", href: "/plans", icon: Crown },
+  { label: "Glow Challenge", href: "/glow-challenge", icon: Flame },
   { label: "Support", href: "/support", icon: MessageSquare },
   { label: "Settings", href: "/settings", icon: Settings },
   { label: "Profile", href: "/profile", icon: User },

@@ -97,6 +97,7 @@ const App = () => (
                 <Route path="/admin/products" element={<AdminGuard><AdminProducts /></AdminGuard>} />
                 <Route path="/admin/dashboard" element={<AdminGuard><AdminDashboard /></AdminGuard>} />
                 <Route path="/support" element={<Support />} />
+                <Route path="/glow-challenge" element={<GlowChallenge />} />
                 <Route path="/payment-history" element={<PaymentHistory />} />
               </Route>
 
