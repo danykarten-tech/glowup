@@ -369,6 +369,15 @@ const Results = () => {
         )}
       </motion.div>
 
+      {/* === FACE ANALYSIS OVERLAY === */}
+      <FaceAnalysisOverlay
+        photoUrl={analysis.photo_url}
+        overallScore={analysis.overall_score}
+        skinScore={analysis.skin_score}
+        acneScore={acneScore}
+        darkSpotScore={darkSpotScore}
+      />
+
       {/* === PERSONALIZED INSIGHTS === */}
       <motion.div
         initial={{ opacity: 0, y: 10 }}
