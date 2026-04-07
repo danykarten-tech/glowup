@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Upload, TrendingUp, History, Sparkles, Crown, Gift, Copy, Check, Flame, Calendar } from "lucide-react";
+import { Sparkles, Flame, TrendingUp, Calendar, Gift, Copy, Check, Crown } from "lucide-react";
 import { motion } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,6 +11,11 @@ import { toast } from "@/hooks/use-toast";
 import GlowJourneySection from "@/components/GlowJourneySection";
 import EngagementCards from "@/components/EngagementCards";
 import BeforeAfterComparison from "@/components/BeforeAfterComparison";
+import DashboardHero from "@/components/dashboard/DashboardHero";
+import QuickActionCards from "@/components/dashboard/QuickActionCards";
+import DailyGlowTip from "@/components/dashboard/DailyGlowTip";
+import ViralChallengeCard from "@/components/dashboard/ViralChallengeCard";
+import PremiumTeaser from "@/components/dashboard/PremiumTeaser";
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -18,8 +23,7 @@ const Dashboard = () => {
   const [history, setHistory] = useState<any[]>([]);
   const [referralCount, setReferralCount] = useState(0);
   const [copied, setCopied] = useState(false);
-  const navigate = useNavigate();
-  const { isPaid, remainingDailyAnalyses, remainingMonthlyAnalyses, canAnalyze, plan, dailyLimit, monthlyLimit } = usePlan();
+  const { isPaid, plan } = usePlan();
 
   useEffect(() => {
     if (!user) return;
@@ -38,10 +42,9 @@ const Dashboard = () => {
   }, [user]);
 
   const firstName = profile?.full_name?.split(" ")[0] || user?.email?.split("@")[0] || "there";
-  const bestScore = history.length > 0 ? Math.max(...history.map((h) => h.overall_score)) : "—";
-  const latestScore = history.length > 0 ? history[0].overall_score : "—";
+  const bestScore = history.length > 0 ? Math.max(...history.map((h) => h.overall_score)) : null;
+  const latestScore = history.length > 0 ? history[0].overall_score : null;
 
-  // Streak calculation
   const streak = (() => {
     if (history.length === 0) return 0;
     let count = 1;
@@ -53,61 +56,37 @@ const Dashboard = () => {
     return count;
   })();
 
-  const improvement = history.length >= 2 ? history[0].overall_score - history[history.length - 1].overall_score : 0;
+  const improvement = history.length >= 2 ? history[0].overall_score - history[1].overall_score : 0;
+
+  const scansThisWeek = history.filter(h => {
+    const startOfWeek = new Date();
+    startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
+    startOfWeek.setHours(0, 0, 0, 0);
+    return new Date(h.created_at) >= startOfWeek;
+  }).length;
 
   return (
-    <div className="p-4 md:p-10 max-w-5xl mx-auto space-y-6">
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-        <h1 className="font-display text-2xl font-bold">
-          Welcome back, <span className="gradient-text">{firstName}</span> ✨
-        </h1>
-        <p className="text-sm text-muted-foreground mt-1">Ready for your next glow-up analysis?</p>
-      </motion.div>
+    <div className="p-4 md:p-10 max-w-5xl mx-auto space-y-5">
+      {/* 1. HERO SECTION */}
+      <DashboardHero
+        firstName={firstName}
+        improvement={improvement}
+        hasHistory={history.length > 0}
+      />
 
-      {/* Upload CTA */}
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
-        <Card className="gradient-bg p-[1px] border-0 rounded-3xl">
-          <div className="bg-card rounded-3xl p-6 flex flex-col md:flex-row items-center gap-5">
-            <div className="w-14 h-14 rounded-2xl gradient-bg flex items-center justify-center shrink-0">
-              <Upload className="w-7 h-7 text-primary-foreground" />
-            </div>
-            <div className="flex-1 text-center md:text-left">
-              <h2 className="font-display text-lg font-bold">Start New Analysis</h2>
-              <p className="text-xs text-muted-foreground mt-1">Upload a selfie to get your updated glow-up score</p>
-            </div>
-            <Button className="gradient-bg border-0 text-primary-foreground px-6 rounded-2xl" asChild>
-              <Link to="/upload">Upload Photo</Link>
-            </Button>
-          </div>
-        </Card>
-      </motion.div>
+      {/* 2. QUICK ACTION CARDS */}
+      <QuickActionCards
+        hasHistory={history.length > 0}
+        latestAnalysisId={history[0]?.id}
+      />
 
-      {/* Upgrade CTA — mobile only */}
-      {plan !== "ultimate" && (
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }} className="md:hidden">
-          <Link to="/plans">
-            <Card className="rounded-3xl gradient-bg border-0 cursor-pointer hover:opacity-90 transition-opacity">
-              <CardContent className="p-4 flex items-center gap-4">
-                <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
-                  <Crown className="w-5 h-5 text-primary-foreground" />
-                </div>
-                <div className="flex-1">
-                  <p className="font-display font-bold text-primary-foreground text-sm flex items-center gap-1">Unlock Your Glow Transformation <Sparkles className="inline w-4 h-4" /></p>
-                  <p className="text-[10px] text-primary-foreground/70">Track skin daily with personalized AI insights</p>
-                </div>
-              </CardContent>
-            </Card>
-          </Link>
-        </motion.div>
-      )}
-
-      {/* Stats Grid */}
+      {/* 3. STATS GRID */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[
-          { label: "Latest Score", value: String(latestScore), icon: Sparkles, accent: false },
-          { label: "Day Streak", value: `${streak} 🔥`, icon: Flame, accent: false },
-          { label: "Best Score", value: String(bestScore), icon: TrendingUp, accent: false },
-          { label: "Total Scans", value: String(history.length), icon: Calendar, accent: false },
+          { label: "Latest Score", value: latestScore != null ? String(latestScore) : "—", icon: Sparkles },
+          { label: "Day Streak", value: `${streak}`, icon: Flame },
+          { label: "Best Score", value: bestScore != null ? String(bestScore) : "—", icon: TrendingUp },
+          { label: "Total Scans", value: String(history.length), icon: Calendar },
         ].map((stat, i) => (
           <motion.div key={stat.label} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 + i * 0.05 }}>
             <Card className="rounded-2xl glass-card border-0">
@@ -127,29 +106,15 @@ const Dashboard = () => {
         ))}
       </div>
 
-      {/* Improvement Insight */}
+      {/* 4. DAILY GLOW TIP */}
+      <DailyGlowTip />
+
+      {/* 5. GLOW PROGRESS TRACKER / JOURNEY */}
       {history.length >= 2 && (
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          className="glass-card rounded-3xl p-4 flex items-center gap-3"
-        >
-          <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${improvement >= 0 ? "bg-emerald-500/10" : "bg-red-500/10"}`}>
-            <TrendingUp className={`w-5 h-5 ${improvement >= 0 ? "text-emerald-500" : "text-red-400"}`} />
-          </div>
-          <div>
-            <p className="text-sm font-display font-semibold">
-              {improvement >= 0 ? `+${improvement}` : improvement} points since first scan
-            </p>
-            <p className="text-xs text-muted-foreground">
-              {improvement > 0 ? "Your glow is improving! Keep scanning daily ✨" : "Stay consistent with your routine for better results"}
-            </p>
-          </div>
-        </motion.div>
+        <GlowJourneySection history={history} streak={streak} isPaid={isPaid} />
       )}
 
-      {/* Before vs After Comparison */}
+      {/* 6. BEFORE VS AFTER */}
       {history.length >= 2 && (
         <BeforeAfterComparison
           previousPhotoUrl={history[1].photo_url}
@@ -161,13 +126,20 @@ const Dashboard = () => {
         />
       )}
 
-      {/* Glow Journey Section */}
-      {history.length >= 2 && (
-        <GlowJourneySection history={history} streak={streak} isPaid={isPaid} />
+      {/* 7. GLOW CHALLENGE — 7 Day + Progress */}
+      <EngagementCards
+        scansThisWeek={scansThisWeek}
+        isPaid={isPaid}
+        totalScans={history.length}
+      />
+
+      {/* 8. VIRAL CHALLENGE CARD */}
+      {latestScore != null && (
+        <ViralChallengeCard latestScore={latestScore} />
       )}
 
-      {/* Referral Card */}
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>
+      {/* 9. REFERRAL CARD */}
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.45 }}>
         <Card className="rounded-3xl glass-card border-0 overflow-hidden">
           <div className="relative">
             <div className="absolute inset-0 gradient-bg opacity-[0.04]" />
@@ -221,7 +193,10 @@ const Dashboard = () => {
         </Card>
       </motion.div>
 
-      {/* Recent Analyses */}
+      {/* 10. PREMIUM TEASER — free users only */}
+      {!isPaid && history.length > 2 && <PremiumTeaser />}
+
+      {/* 11. RECENT ANALYSES */}
       <Card className="rounded-3xl glass-card border-0">
         <CardHeader className="flex flex-row items-center justify-between pb-2">
           <CardTitle className="font-display text-sm">Recent Analyses</CardTitle>
@@ -242,7 +217,9 @@ const Dashboard = () => {
                   className="flex items-center justify-between p-3 rounded-2xl hover:bg-muted/50 transition-colors"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-lg bg-muted flex items-center justify-center text-base">📸</div>
+                    <div className="w-9 h-9 rounded-lg gradient-bg-subtle flex items-center justify-center">
+                      <Sparkles className="w-4 h-4 text-primary" />
+                    </div>
                     <div>
                       <p className="text-xs font-medium">Glow Analysis</p>
                       <p className="text-[10px] text-muted-foreground">{new Date(h.created_at).toLocaleDateString()}</p>
@@ -256,17 +233,12 @@ const Dashboard = () => {
         </CardContent>
       </Card>
 
-      {/* Engagement & Premium */}
-      <EngagementCards
-        scansThisWeek={history.filter(h => {
-          const startOfWeek = new Date();
-          startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
-          startOfWeek.setHours(0, 0, 0, 0);
-          return new Date(h.created_at) >= startOfWeek;
-        }).length}
-        isPaid={isPaid}
-        totalScans={history.length}
-      />
+      {/* Trust note */}
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6 }} className="text-center px-4 py-3">
+        <p className="text-[10px] text-muted-foreground/70 leading-relaxed">
+          Progress comparisons are based on visible skin surface changes between scans.
+        </p>
+      </motion.div>
     </div>
   );
 };

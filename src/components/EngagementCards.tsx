@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Bell, Target, BarChart3, Lock, Crown, Sparkles, Trophy } from "lucide-react";
+import { Bell, Target, BarChart3, Lock, Crown, Sparkles, Trophy, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { Progress } from "@/components/ui/progress";
@@ -17,32 +17,70 @@ const EngagementCards = ({ scansThisWeek, isPaid, totalScans }: EngagementCardsP
 
   return (
     <div className="space-y-3">
-      {/* 7-Day Glow Challenge */}
+      {/* 7-Day Glow Challenge — upgraded */}
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.25 }}
-        className="glass-card rounded-3xl p-5 space-y-4"
+        className="relative rounded-3xl overflow-hidden"
       >
-        <div className="flex items-center gap-2">
-          <Trophy className="w-5 h-5 text-primary" />
-          <h3 className="font-display font-semibold text-sm">7-Day Glow Challenge</h3>
-        </div>
-        <div className="space-y-2">
-          <div className="flex items-center justify-between text-xs">
-            <span className="text-muted-foreground">{scansThisWeek}/7 scans this week</span>
-            <span className="font-display font-semibold text-primary">{Math.round(challengeProgress)}%</span>
+        <div className="absolute inset-0 gradient-bg opacity-[0.06]" />
+        <div className="relative glass-card rounded-3xl p-5 space-y-4 border border-primary/10">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Trophy className="w-5 h-5 text-primary" />
+              <h3 className="font-display font-bold text-sm">7-Day Glow Challenge</h3>
+            </div>
+            {challengeComplete && (
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/20"
+              >
+                <Star className="w-3 h-3 text-emerald-400" />
+                <span className="text-[10px] font-semibold text-emerald-400">Complete</span>
+              </motion.div>
+            )}
           </div>
-          <Progress value={challengeProgress} className="h-2.5 rounded-full" />
-          <p className="text-[11px] text-muted-foreground text-center">
-            {challengeComplete
-              ? "🎉 Challenge complete! You've earned your Glow Transformation badge!"
-              : `Complete ${scansRemaining} more scan${scansRemaining !== 1 ? "s" : ""} to unlock your glow transformation badge`}
-          </p>
+
+          {/* Progress bar */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-muted-foreground">{scansThisWeek} of 7 daily scans</span>
+              <span className="font-display font-bold gradient-text text-sm">{Math.round(challengeProgress)}%</span>
+            </div>
+            <div className="relative">
+              <Progress value={challengeProgress} className="h-3 rounded-full" />
+              {/* Day markers */}
+              <div className="flex justify-between mt-1.5">
+                {Array.from({ length: 7 }).map((_, i) => (
+                  <div key={i} className="flex flex-col items-center">
+                    <div className={`w-2 h-2 rounded-full transition-all ${
+                      i < scansThisWeek
+                        ? "gradient-bg shadow-sm"
+                        : "bg-muted-foreground/20"
+                    }`} />
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Reward text */}
+          <div className="glass-card rounded-2xl p-3 flex items-center gap-3">
+            <div className="w-8 h-8 rounded-xl gradient-bg-subtle flex items-center justify-center shrink-0">
+              <Crown className="w-4 h-4 text-primary" />
+            </div>
+            <p className="text-[11px] text-foreground/80 leading-relaxed">
+              {challengeComplete
+                ? "You've unlocked premium insights! Check your latest report."
+                : `Complete ${scansRemaining} more scan${scansRemaining !== 1 ? "s" : ""} to unlock premium insights`}
+            </p>
+          </div>
         </div>
       </motion.div>
 
-      {/* Return triggers */}
+      {/* Progress nudges */}
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
@@ -51,25 +89,13 @@ const EngagementCards = ({ scansThisWeek, isPaid, totalScans }: EngagementCardsP
       >
         <p className="text-xs font-display font-semibold text-foreground flex items-center gap-2">
           <Target className="w-4 h-4 text-primary" />
-          Glow Challenge Progress
+          Keep the Momentum
         </p>
         <div className="space-y-2">
           {[
-            {
-              icon: Bell,
-              text: "Come back tomorrow for your next progress check",
-              show: true,
-            },
-            {
-              icon: BarChart3,
-              text: `${scansRemaining} more scan${scansRemaining !== 1 ? "s" : ""} to complete your weekly glow challenge`,
-              show: scansRemaining > 0,
-            },
-            {
-              icon: Sparkles,
-              text: "Your best results happen with consistent scans",
-              show: true,
-            },
+            { icon: Bell, text: "Come back tomorrow for your next progress check", show: true },
+            { icon: BarChart3, text: `${scansRemaining} more scan${scansRemaining !== 1 ? "s" : ""} to complete your weekly glow challenge`, show: scansRemaining > 0 },
+            { icon: Sparkles, text: "Your best results happen with consistent scans", show: true },
           ]
             .filter(t => t.show)
             .map((trigger, i) => (
@@ -97,7 +123,6 @@ const EngagementCards = ({ scansThisWeek, isPaid, totalScans }: EngagementCardsP
               <h3 className="font-display font-semibold text-sm">Unlock Full Glow History</h3>
             </div>
 
-            {/* Blurred preview */}
             <div className="relative rounded-2xl overflow-hidden">
               <div className="space-y-2 blur-[6px] pointer-events-none select-none">
                 {[85, 78, 82].map((score, i) => (
@@ -120,31 +145,7 @@ const EngagementCards = ({ scansThisWeek, isPaid, totalScans }: EngagementCardsP
               </div>
             </div>
 
-            <p className="text-[11px] text-muted-foreground text-center">
-              Unlock full glow history and long-term progress tracking
-            </p>
-
-            {/* Plan features */}
-            <div className="grid grid-cols-2 gap-2 text-[10px]">
-              <div className="glass-card rounded-2xl p-3 space-y-1.5">
-                <p className="font-semibold text-foreground">Glow Plus</p>
-                <ul className="space-y-1 text-muted-foreground">
-                  <li>• 30-day comparison</li>
-                  <li>• Full progress charts</li>
-                  <li>• Routine evolution</li>
-                </ul>
-              </div>
-              <div className="glass-card rounded-2xl p-3 space-y-1.5 border border-primary/20">
-                <p className="font-semibold gradient-text">Glow Pro</p>
-                <ul className="space-y-1 text-muted-foreground">
-                  <li>• Unlimited history</li>
-                  <li>• AI improvement timeline</li>
-                  <li>• Deep before/after</li>
-                </ul>
-              </div>
-            </div>
-
-            <Button className="w-full gradient-bg border-0 text-primary-foreground rounded-2xl gap-2" asChild>
+            <Button className="w-full gradient-bg border-0 text-primary-foreground rounded-2xl gap-2 btn-glow" asChild>
               <Link to="/plans">
                 <Crown className="w-4 h-4" />
                 Unlock My Full Glow Journey
@@ -153,18 +154,6 @@ const EngagementCards = ({ scansThisWeek, isPaid, totalScans }: EngagementCardsP
           </div>
         </motion.div>
       )}
-
-      {/* Trust note */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.5 }}
-        className="text-center px-4 py-3"
-      >
-        <p className="text-[10px] text-muted-foreground/70 leading-relaxed">
-          Progress comparisons are based on visible skin surface changes between scans.
-        </p>
-      </motion.div>
     </div>
   );
 };
