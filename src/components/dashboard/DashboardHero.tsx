@@ -63,7 +63,7 @@ const DashboardHero = ({ firstName, improvement, hasHistory }: DashboardHeroProp
         >
           <Button
             size="lg"
-            className="bg-white text-foreground hover:bg-white/90 font-bold rounded-2xl gap-2 px-8 shadow-xl shadow-black/20 btn-glow"
+            className="bg-background text-foreground hover:bg-background/90 font-bold rounded-2xl gap-2 px-8 shadow-xl shadow-black/30 btn-glow border border-border/50"
             asChild
           >
             <Link to="/upload">
